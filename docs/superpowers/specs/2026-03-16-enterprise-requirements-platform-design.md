@@ -15,7 +15,7 @@ A web-based system for gathering high-level requirements and project scope, incl
 - **Auth:** NextAuth.js (email/password with verification)
 - **Styling:** Tailwind CSS
 - **AI:** Claude API (server-side)
-- **Export:** Markdown, PDF, Word (.docx via `docx` npm package)
+- **Export:** Markdown, PDF (via `@react-pdf/renderer`), Word (.docx via `docx` npm package)
 - **Deployment:** Docker container on Coolify, single PostgreSQL database
 
 ## Data Model
@@ -178,6 +178,7 @@ Multiple outputs of the same type per project are allowed. Each generation creat
 - **Server Actions for mutations.** Creating/updating requirements, generating outputs. No separate API routes for internal operations.
 - **Middleware for auth.** Redirect unauthenticated users, verify org membership on org/project routes.
 - **Claude API calls server-side** in Server Actions. The API key never reaches the client.
+- **Last-write-wins** for concurrent edits. No real-time collaboration or conflict resolution. If two users edit the same project simultaneously, the last save overwrites. Acceptable at small scale.
 
 ## UI Layout
 
@@ -193,7 +194,7 @@ Three-tier layout:
 
 Vertical step list on the left side of the content area, content on the right. Steps:
 
-1. **Project Metadata** -- business context, target users, stakeholders, timeline
+1. **Project Metadata** -- business context, target users, stakeholders, timeline, glossary
 2. **Vision Statement** -- single clear statement of what the project achieves
 3. **Key Objectives (up to 5)** -- measurable outcomes with success criteria. Minimum 1, maximum 5 enforced in wizard. Guides users to prioritize.
 4. **User Stories (up to 10)** -- "As a [role], I want [capability], so that [benefit]" with priority. Minimum 1, maximum 10 enforced in wizard. Keeps initial scoping focused.
@@ -210,7 +211,7 @@ Completed steps show a checkmark. Users can jump back to any completed step. Aft
 - **Add/remove:** Users can exceed wizard limits (more than 5 objectives, more than 10 stories)
 - **Drag-and-drop reordering** within each section
 - **MoSCoW priority tagging** on user stories and requirements (must/should/could/won't)
-- **Re-enter wizard:** Option to go back through the guided flow
+- **Re-enter wizard:** Option to go back through the guided flow. If the project now has more items than the wizard limits (e.g., 12 user stories), the wizard displays all existing items but disables adding new ones until the count is within limits. Users can remove items in the wizard to get back under the cap, or exit and continue in freeform mode.
 - **Project Meta tab:** Business context, stakeholders, timeline, glossary
 
 ## Authentication & Authorization
@@ -221,6 +222,8 @@ Completed steps show a checkmark. Users can jump back to any completed step. Aft
 - Login with email/password (verified accounts only)
 - Forgot password / reset password via email link
 - Sessions managed via NextAuth.js with JWT tokens
+- Email verification links expire after 24 hours
+- Password reset links expire after 1 hour
 
 ### Post-Registration
 
@@ -314,3 +317,4 @@ The system handles prompt engineering -- users just pick what they want generate
 - Transactional email for verification and password reset
 - Provider: Resend (simple API, good Next.js integration, free tier covers small scale)
 - Configured via RESEND_API_KEY environment variable
+- Sender address: noreply@enterprise.coria.app (requires Resend domain verification for enterprise.coria.app)
