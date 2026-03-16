@@ -5,37 +5,106 @@ import { hashPassword, generateToken, generateTokenExpiry } from "@/lib/auth-uti
 import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 
 export async function registerUser(data: {
-  email: string; password: string; name: string; invitationToken?: string;
+  email: string;
+  password: string;
+  name: string;
+  invitationToken?: string;
 }) {
-  const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
+  const existing = await prisma.user.findUnique({
+    where: { email: data.email.toLowerCase() },
+  });
   if (existing) return { error: "An account with this email already exists" };
-  if (data.password.length < 8) return { error: "Password must be at least 8 characters" };
+  if (data.password.length < 8)
+    return { error: "Password must be at least 8 characters" };
+
+  // Validate invitation if provided
+  let invitationId: string | undefined;
+  if (data.invitationToken) {
+    const invitation = await prisma.orgInvitation.findUnique({
+      where: { token: data.invitationToken },
+    });
+    if (
+      invitation &&
+      invitation.status === "pending" &&
+      invitation.expiresAt > new Date() &&
+      invitation.email === data.email.toLowerCase()
+    ) {
+      invitationId = invitation.id;
+    }
+  }
 
   const passwordHash = await hashPassword(data.password);
   const verificationToken = generateToken();
   const verificationExpires = generateTokenExpiry(24);
 
-  const user = await prisma.user.create({
+  await prisma.user.create({
     data: {
-      email: data.email.toLowerCase(), passwordHash, name: data.name,
-      verificationToken, verificationExpires,
+      email: data.email.toLowerCase(),
+      passwordHash,
+      name: data.name,
+      verificationToken,
+      verificationExpires,
+      pendingInvitationId: invitationId,
     },
   });
 
-  await sendVerificationEmail(user.email, verificationToken);
-  return { success: true, userId: user.id };
+  await sendVerificationEmail(data.email.toLowerCase(), verificationToken);
+  return { success: true };
 }
 
 export async function verifyEmail(token: string) {
   const user = await prisma.user.findFirst({
-    where: { verificationToken: token, verificationExpires: { gt: new Date() }, emailVerified: false },
+    where: {
+      verificationToken: token,
+      verificationExpires: { gt: new Date() },
+      emailVerified: false,
+    },
   });
-  if (!user) return { error: "Invalid or expired verification link" };
+
+  if (!user) {
+    return { error: "Invalid or expired verification link" };
+  }
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { emailVerified: true, verificationToken: null, verificationExpires: null },
+    data: {
+      emailVerified: true,
+      verificationToken: null,
+      verificationExpires: null,
+    },
   });
+
+  // Auto-accept pending invitation
+  if (user.pendingInvitationId) {
+    const invitation = await prisma.orgInvitation.findUnique({
+      where: { id: user.pendingInvitationId },
+    });
+
+    if (
+      invitation &&
+      invitation.status === "pending" &&
+      invitation.expiresAt > new Date()
+    ) {
+      await prisma.$transaction([
+        prisma.orgMembership.create({
+          data: {
+            userId: user.id,
+            orgId: invitation.orgId,
+            role: invitation.role,
+          },
+        }),
+        prisma.orgInvitation.update({
+          where: { id: invitation.id },
+          data: { status: "accepted" },
+        }),
+        prisma.user.update({
+          where: { id: user.id },
+          data: { pendingInvitationId: null },
+        }),
+      ]);
+    }
+  }
+
   return { success: true, email: user.email };
 }
 
