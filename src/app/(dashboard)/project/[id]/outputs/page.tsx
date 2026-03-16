@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import { OutputItem } from "@/components/outputs/output-item";
 
 const TYPE_LABELS: Record<string, string> = {
   ai_prompt: "AI Coding Prompt",
@@ -58,29 +59,15 @@ export default async function OutputsPage({
               </h3>
               <div className="space-y-2">
                 {outputs.map((output) => (
-                  <details
+                  <OutputItem
                     key={output.id}
-                    className="rounded-lg border border-gray-800"
-                  >
-                    <summary className="cursor-pointer px-4 py-3 text-sm hover:bg-gray-800/50">
-                      <span className="font-medium">
-                        {new Date(output.generatedAt).toLocaleString()}
-                      </span>
-                      <span className="ml-2 text-gray-500">
-                        by {output.generatedBy.name}
-                      </span>
-                      {output.editedContent && (
-                        <span className="ml-2 rounded bg-yellow-900/50 px-1.5 py-0.5 text-xs text-yellow-300">
-                          edited
-                        </span>
-                      )}
-                    </summary>
-                    <div className="border-t border-gray-800 p-4">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-300">
-                        {output.editedContent || output.content}
-                      </pre>
-                    </div>
-                  </details>
+                    id={output.id}
+                    content={output.content}
+                    editedContent={output.editedContent}
+                    generatedAt={output.generatedAt.toISOString()}
+                    generatedByName={output.generatedBy.name}
+                    outputType={output.outputType}
+                  />
                 ))}
               </div>
             </div>
