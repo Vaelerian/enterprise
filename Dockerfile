@@ -10,6 +10,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+# Run migration during build (has access to full node_modules)
+# DATABASE_URL is passed as build arg by Coolify
+ARG DATABASE_URL
+RUN if [ -n "$DATABASE_URL" ]; then npx prisma migrate deploy; fi
 RUN npm run build
 
 FROM base AS runner
@@ -22,17 +26,10 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-# Copy full node_modules from deps stage for Prisma CLI migration support
-# Prisma v7 has deep transitive deps (valibot, @prisma/dev, etc.)
-COPY --from=deps /app/node_modules ./node_modules
-# Overwrite with generated prisma client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["node", "server.js"]
