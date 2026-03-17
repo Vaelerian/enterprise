@@ -41,6 +41,13 @@ export function OrgRail({ orgs, currentSlug }: { orgs: OrgItem[]; currentSlug?: 
           {org.name.substring(0, 2).toUpperCase()}
         </Link>
       ))}
+      <Link
+        href="/dashboard?create=1"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+        title="Create new organization"
+      >
+        +
+      </Link>
     </div>
   );
 }
