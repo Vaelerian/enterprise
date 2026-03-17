@@ -25,13 +25,13 @@ export function SubprocessNode({ data, selected }: NodeProps) {
 
   return (
     <div
-      className={`rounded-lg border-2 bg-white px-4 py-2 min-w-30 text-center shadow-sm ${
-        selected ? "border-blue-500" : "border-gray-300"
+      className={`rounded-lg border-2 bg-card text-card-foreground px-6 py-2.5 min-w-[140px] max-w-[220px] text-center shadow-sm ${
+        selected ? "border-primary" : "border-border"
       }`}
       onDoubleClick={() => setEditing(true)}
     >
-      <Handle type="target" position={Position.Top} className="bg-gray-400!" />
-      <div className="border-l-2 border-r-2 border-gray-300 px-2 -mx-2">
+      <Handle type="target" position={Position.Top} className="bg-muted-foreground!" />
+      <div className="border-l-2 border-r-2 border-border px-3 -mx-3">
         {editing ? (
           <input
             ref={inputRef}
@@ -39,13 +39,13 @@ export function SubprocessNode({ data, selected }: NodeProps) {
             onChange={(e) => setLabel(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-            className="w-full bg-transparent text-center text-sm outline-none"
+            className="w-full bg-transparent text-center text-sm outline-none text-card-foreground"
           />
         ) : (
-          <span className="text-sm">{label}</span>
+          <span className="text-sm leading-snug">{label}</span>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="bg-gray-400!" />
+      <Handle type="source" position={Position.Bottom} className="bg-muted-foreground!" />
     </div>
   );
 }

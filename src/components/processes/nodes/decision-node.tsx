@@ -23,15 +23,29 @@ export function DecisionNode({ data, selected }: NodeProps) {
     if (nodeData.onLabelChange) nodeData.onLabelChange(label);
   };
 
+  const w = 160;
+  const h = 80;
+
   return (
     <div
-      className={`rotate-45 border-2 bg-white min-w-30 min-h-20 flex items-center justify-center shadow-sm ${
-        selected ? "border-blue-500" : "border-amber-400"
-      }`}
+      className="relative"
+      style={{ width: w, height: h }}
       onDoubleClick={() => setEditing(true)}
     >
-      <Handle type="target" position={Position.Top} className="bg-gray-400!" />
-      <div className="-rotate-45 flex items-center justify-center px-4 py-2">
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        className="absolute inset-0"
+      >
+        <polygon
+          points={`${w / 2},2 ${w - 2},${h / 2} ${w / 2},${h - 2} 2,${h / 2}`}
+          className={selected ? "fill-card stroke-primary" : "fill-card stroke-amber-500"}
+          strokeWidth="2"
+        />
+      </svg>
+      <Handle type="target" position={Position.Top} className="bg-muted-foreground!" />
+      <div className="absolute inset-0 flex items-center justify-center px-6">
         {editing ? (
           <input
             ref={inputRef}
@@ -39,14 +53,26 @@ export function DecisionNode({ data, selected }: NodeProps) {
             onChange={(e) => setLabel(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-            className="w-full bg-transparent text-center text-xs outline-none"
+            className="w-full bg-transparent text-center text-xs outline-none text-card-foreground"
           />
         ) : (
-          <span className="text-xs">{label}</span>
+          <span className="text-xs text-center leading-tight text-card-foreground">{label}</span>
         )}
       </div>
-      <Handle type="source" position={Position.Right} id="yes" className="bg-green-500!" />
-      <Handle type="source" position={Position.Bottom} id="no" className="bg-red-500!" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="yes"
+        className="bg-green-500!"
+        style={{ top: "50%" }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="no"
+        className="bg-red-500!"
+        style={{ left: "50%" }}
+      />
     </div>
   );
 }

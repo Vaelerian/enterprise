@@ -20,8 +20,8 @@ function layoutNodes(
   g.setGraph({ rankdir: "TB", nodesep: 80, ranksep: 100 });
 
   nodes.forEach((node) => {
-    const width = node.type === "decision" ? 100 : 150;
-    const height = node.type === "decision" ? 100 : 50;
+    const width = node.type === "decision" ? 160 : 180;
+    const height = node.type === "decision" ? 80 : 40;
     g.setNode(node.id, { width, height });
   });
 

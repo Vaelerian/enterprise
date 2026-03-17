@@ -17,15 +17,15 @@ export function FlowToolbar() {
   };
 
   return (
-    <div className="flex gap-2 rounded-lg border bg-white p-2 shadow-sm">
+    <div className="flex gap-2 rounded-lg border border-border bg-card p-2 shadow-sm">
       {nodeTypes.map(({ type, label, icon: Icon }) => (
         <div
           key={type}
-          className="flex cursor-grab items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50 active:cursor-grabbing"
+          className="flex cursor-grab items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-card-foreground hover:bg-accent active:cursor-grabbing"
           draggable
           onDragStart={(e) => onDragStart(e, type)}
         >
-          <Icon className="h-4 w-4 text-gray-500" />
+          <Icon className="h-4 w-4 text-muted-foreground" />
           {label}
         </div>
       ))}
