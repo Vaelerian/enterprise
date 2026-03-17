@@ -259,6 +259,8 @@ export async function updateOrgBrand(
   orgId: string,
   data: {
     website: string;
+    logoUrl: string;
+    faviconUrl: string;
     brandColors: string;
     brandTone: string;
     brandDescription: string;
@@ -275,6 +277,8 @@ export async function updateOrgBrand(
     where: { id: orgId },
     data: {
       website: data.website,
+      logoUrl: data.logoUrl,
+      faviconUrl: data.faviconUrl,
       brandColors: data.brandColors,
       brandTone: data.brandTone,
       brandDescription: data.brandDescription,

@@ -37,6 +37,8 @@ model Organization {
   name            String
   slug            String   @unique
   website         String   @default("")
+  logoUrl         String   @default("")
+  faviconUrl      String   @default("")
   brandColors     String   @default("")
   brandTone       String   @default("")
   brandDescription String  @default("")

@@ -64,6 +64,8 @@ export default async function OrgSettingsPage({
               orgId={org.id}
               initialBrand={{
                 website: org.website,
+                logoUrl: org.logoUrl,
+                faviconUrl: org.faviconUrl,
                 brandColors: org.brandColors,
                 brandTone: org.brandTone,
                 brandDescription: org.brandDescription,

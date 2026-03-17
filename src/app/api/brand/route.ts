@@ -5,6 +5,14 @@ import { canManageOrgSettings } from "@/lib/permissions";
 import FirecrawlApp from "@mendable/firecrawl-js";
 import Anthropic from "@anthropic-ai/sdk";
 
+function resolveUrl(base: string, path: string): string {
+  try {
+    return new URL(path, base).href;
+  } catch {
+    return path;
+  }
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -50,6 +58,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Extract logo from metadata
+    const metadata = result.metadata || {};
+    const ogImage = metadata.ogImage
+      ? resolveUrl(url, metadata.ogImage)
+      : "";
+
+    // Build favicon URL from the domain
+    const faviconUrl = resolveUrl(url, "/favicon.ico");
+
     const pageContent = result.markdown.slice(0, 8000);
 
     const anthropic = new Anthropic();
@@ -64,10 +81,13 @@ export async function POST(req: Request) {
 {
   "brandColors": "primary and accent colors mentioned or implied (e.g. 'Navy blue (#1a2b3c), Gold (#d4a017), White')",
   "brandTone": "the voice and tone of the brand (e.g. 'Professional, authoritative, approachable')",
-  "brandDescription": "2-3 sentence summary of the brand identity, what the company does, and how they present themselves"
+  "brandDescription": "2-3 sentence summary of the brand identity, what the company does, and how they present themselves",
+  "logoUrl": "URL of the company logo if found in the page content, or empty string if not found"
 }
 
 If you cannot determine a field, use an empty string. Do not guess colors that are not evident from the content.
+
+The og:image for this site is: ${ogImage || "(not available)"}
 
 Website URL: ${url}
 Website content:
@@ -88,10 +108,17 @@ ${pageContent}`,
 
     const brand = JSON.parse(jsonMatch[0]);
 
+    // Prefer Claude-identified logo, fall back to og:image
+    const logoUrl = brand.logoUrl
+      ? resolveUrl(url, brand.logoUrl)
+      : ogImage;
+
     await prisma.organization.update({
       where: { id: orgId },
       data: {
         website: url,
+        logoUrl,
+        faviconUrl,
         brandColors: brand.brandColors || "",
         brandTone: brand.brandTone || "",
         brandDescription: brand.brandDescription || "",
@@ -102,6 +129,8 @@ ${pageContent}`,
       success: true,
       brand: {
         website: url,
+        logoUrl,
+        faviconUrl,
         brandColors: brand.brandColors || "",
         brandTone: brand.brandTone || "",
         brandDescription: brand.brandDescription || "",

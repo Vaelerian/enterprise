@@ -7,6 +7,8 @@ import { updateOrgBrand } from "@/actions/orgs";
 
 type BrandData = {
   website: string;
+  logoUrl: string;
+  faviconUrl: string;
   brandColors: string;
   brandTone: string;
   brandDescription: string;
@@ -106,7 +108,52 @@ export function BrandSettings({
         </Button>
       </div>
 
+      {(brand.logoUrl || brand.faviconUrl) && (
+        <div className="flex items-center gap-4 rounded-lg border border-gray-800 bg-gray-900 p-4">
+          {brand.logoUrl && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Logo</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={brand.logoUrl}
+                alt="Organization logo"
+                className="max-h-16 max-w-48 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
+          {brand.faviconUrl && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Favicon</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={brand.faviconUrl}
+                alt="Favicon"
+                className="h-8 w-8 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Logo URL</label>
+          <Input
+            placeholder="https://yourcompany.com/logo.png"
+            value={brand.logoUrl}
+            onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Direct URL to your company logo image
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-1">
             Brand Colors
