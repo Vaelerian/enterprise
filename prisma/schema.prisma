@@ -109,6 +109,7 @@ model Project {
   requirementCategories RequirementCategory[]
   wizardState ProjectWizardState?
   generatedOutputs GeneratedOutput[]
+  processFlows ProcessFlow[]
 }
 
 model ProjectMeta {
@@ -222,4 +223,23 @@ model GeneratedOutput {
 
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   generatedBy User    @relation(fields: [generatedById], references: [id])
+}
+
+enum FlowType {
+  as_is
+  to_be
+}
+
+model ProcessFlow {
+  id          String   @id @default(uuid())
+  projectId   String
+  name        String
+  description String   @default("")
+  flowType    FlowType
+  diagramData Json     @default("{}")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
