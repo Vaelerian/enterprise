@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { ProjectSidebar } from "@/components/layout/project-sidebar";
 import { OrgSettingsForm } from "@/components/org/org-settings-form";
+import { BrandSettings } from "@/components/org/brand-settings";
 
 export default async function OrgSettingsPage({
   params,
@@ -56,7 +57,20 @@ export default async function OrgSettingsPage({
       />
       <div className="flex-1 overflow-y-auto p-8">
         <h2 className="mb-6 text-xl font-semibold">Organization Settings</h2>
-        <OrgSettingsForm orgId={org.id} orgName={org.name} />
+        <div className="space-y-10 max-w-lg">
+          <OrgSettingsForm orgId={org.id} orgName={org.name} />
+          <div className="border-t border-gray-800 pt-8">
+            <BrandSettings
+              orgId={org.id}
+              initialBrand={{
+                website: org.website,
+                brandColors: org.brandColors,
+                brandTone: org.brandTone,
+                brandDescription: org.brandDescription,
+              }}
+            />
+          </div>
+        </div>
       </div>
     </>
   );

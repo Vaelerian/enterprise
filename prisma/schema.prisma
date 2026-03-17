@@ -33,11 +33,15 @@ enum OrgRole {
 }
 
 model Organization {
-  id        String          @id @default(uuid())
-  name      String
-  slug      String          @unique
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  website         String   @default("")
+  brandColors     String   @default("")
+  brandTone       String   @default("")
+  brandDescription String  @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   memberships OrgMembership[]
   invitations OrgInvitation[]

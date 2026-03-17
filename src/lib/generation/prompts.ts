@@ -68,6 +68,11 @@ export function buildUserPrompt(projectData: {
     stakeholders: string;
     glossary: string;
   } | null;
+  brand?: {
+    colors: string;
+    tone: string;
+    description: string;
+  } | null;
   objectives: { title: string; successCriteria: string }[];
   userStories: {
     role: string;
@@ -94,6 +99,20 @@ export function buildUserPrompt(projectData: {
 
   if (projectData.description) {
     prompt += `${projectData.description}\n\n`;
+  }
+
+  if (projectData.brand) {
+    prompt += `## Organization Brand\n`;
+    if (projectData.brand.description) {
+      prompt += `${projectData.brand.description}\n`;
+    }
+    if (projectData.brand.tone) {
+      prompt += `- Brand tone: ${projectData.brand.tone}\n`;
+    }
+    if (projectData.brand.colors) {
+      prompt += `- Brand colors: ${projectData.brand.colors}\n`;
+    }
+    prompt += "\n";
   }
 
   const meta = projectData.meta;

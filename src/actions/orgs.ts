@@ -255,6 +255,35 @@ export async function removeMember(orgId: string, targetUserId: string) {
   return { success: true };
 }
 
+export async function updateOrgBrand(
+  orgId: string,
+  data: {
+    website: string;
+    brandColors: string;
+    brandTone: string;
+    brandDescription: string;
+  }
+) {
+  const user = await requireSession();
+  const membership = await requireOrgMembership(user.id, orgId);
+
+  if (!canManageOrgSettings(membership.role)) {
+    return { error: "Only owners can update brand settings" };
+  }
+
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: {
+      website: data.website,
+      brandColors: data.brandColors,
+      brandTone: data.brandTone,
+      brandDescription: data.brandDescription,
+    },
+  });
+
+  return { success: true };
+}
+
 export async function getUserOrgs() {
   const user = await requireSession();
 

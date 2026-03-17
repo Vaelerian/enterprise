@@ -38,10 +38,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const org = project.org;
+    const brand =
+      org.brandColors || org.brandTone || org.brandDescription
+        ? {
+            colors: org.brandColors,
+            tone: org.brandTone,
+            description: org.brandDescription,
+          }
+        : null;
+
     const stream = await generateOutput(outputType, {
       name: project.name,
       description: project.description,
       meta: project.meta || null,
+      brand,
       objectives: project.objectives,
       userStories: project.userStories,
       nfrCategories: project.requirementCategories
