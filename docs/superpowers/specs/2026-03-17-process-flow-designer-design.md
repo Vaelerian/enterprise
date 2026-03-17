@@ -37,7 +37,7 @@ model ProcessFlow {
   name        String
   description String   @default("")
   flowType    FlowType
-  diagramData Json     @default("{\"nodes\":[],\"edges\":[]}")
+  diagramData Json     @default("{}")
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -46,7 +46,9 @@ model ProcessFlow {
 }
 ```
 
-The `diagramData` JSON field stores the complete Xyflow serialized state. This avoids normalizing nodes and edges into separate database tables, which would add complexity without benefit since the data is always loaded and saved as a unit.
+The `diagramData` JSON field stores the complete Xyflow serialized state. Default is `{}` at the database level; the application initializes it to `{nodes: [], edges: []}` when creating a new flow. This avoids normalizing nodes and edges into separate database tables, which would add complexity without benefit since the data is always loaded and saved as a unit.
+
+The `Project` model must also gain a `processFlows ProcessFlow[]` reverse relation field.
 
 ### Node Schema (within diagramData JSON)
 
@@ -80,7 +82,7 @@ The wizard gains a new optional **Step 7: "Process Flows"**, pushing the current
 
 ### Server Action
 
-`saveProcessFlows` in `wizard.ts` using the existing bulk save pattern (delete and recreate).
+`saveProcessFlows` in `wizard.ts` using the existing bulk save pattern (delete and recreate). This is acceptable because flow IDs are not externally referenced in v1. All hardcoded step-7 references in `finalizeWizard()` and `WizardShell` max-step logic must be updated to step 8.
 
 ## Processes Tab
 
@@ -158,7 +160,7 @@ src/
 - `src/components/layout/project-tabs.tsx` -- add "Processes" tab
 - `src/components/wizard/wizard-shell.tsx` -- add step 7, shift Review to step 8
 - `src/components/wizard/wizard-client.tsx` -- wire up new step component
-- `src/actions/wizard.ts` -- add saveProcessFlows action
+- `src/actions/wizard.ts` -- add saveProcessFlows action, update finalizeWizard step references from 7 to 8
 - `src/lib/generation/prompts.ts` -- add flow generation prompt, extend existing output prompts with flow data
 - `src/lib/generation/generate.ts` -- add non-streaming generation for structured JSON (flow generation)
 
@@ -172,8 +174,8 @@ src/
 
 - `createProcessFlow(projectId, name, flowType)` -- create new flow
 - `updateProcessFlow(id, data)` -- update name, description, type
-- `updateDiagramData(id, diagramData)` -- save Xyflow JSON (called on debounced auto-save)
-- `deleteProcessFlow(id)` -- delete a flow
+- `updateDiagramData(id, projectId, diagramData)` -- save Xyflow JSON (called on debounced auto-save). Accepts projectId alongside id for simpler permission checks (flow -> project -> org lookup)
+- `deleteProcessFlow(id, projectId)` -- delete a flow. Accepts projectId for permission checks
 - `reorderProcessFlows(projectId, orderedIds)` -- update sort order
 
 All actions check permissions via `requireSession()` and `requireOrgMembership()`.
