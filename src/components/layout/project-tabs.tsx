@@ -8,6 +8,7 @@ const tabs = [
   { label: "Wizard", href: "wizard" },
   { label: "Requirements", href: "requirements" },
   { label: "Meta", href: "meta" },
+  { label: "Processes", href: "processes" },
   { label: "Generate", href: "generate" },
   { label: "Outputs", href: "outputs" },
   { label: "Settings", href: "settings" },
