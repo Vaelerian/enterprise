@@ -230,7 +230,7 @@ function applyChangeCat(
       ...data,
       requirements: [],
       changeInfo: info,
-    } as ResolvedProjectState["requirementCategories"][0]);
+    } as unknown as ResolvedProjectState["requirementCategories"][0]);
   } else if (change.changeType === "modified" && change.targetId) {
     const idx = categories.findIndex((c) => c.id === change.targetId);
     if (idx >= 0) {
@@ -258,7 +258,7 @@ function applyChangeReq(
         ...data,
         metrics: (data.metrics as []) ?? [],
         changeInfo: info,
-      } as ResolvedProjectState["requirementCategories"][0]["requirements"][0]);
+      } as unknown as ResolvedProjectState["requirementCategories"][0]["requirements"][0]);
     }
   } else if (change.changeType === "modified" && change.targetId) {
     for (const cat of categories) {
