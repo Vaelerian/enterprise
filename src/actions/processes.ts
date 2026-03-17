@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { FlowType } from "@prisma/client";
+import { FlowType, type Prisma } from "@prisma/client";
 
 async function getProjectWithAuth(projectId: string) {
   const user = await requireSession();
@@ -49,7 +49,8 @@ export async function updateProcessFlow(
 export async function updateDiagramData(
   id: string,
   projectId: string,
-  diagramData: { nodes: unknown[]; edges: unknown[] }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  diagramData: any
 ) {
   await getProjectWithAuth(projectId);
   await prisma.processFlow.update({

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { Priority, FlowType } from "@prisma/client";
+import { Priority, FlowType, type Prisma } from "@prisma/client";
 
 async function getProjectWithAuth(projectId: string) {
   const user = await requireSession();
@@ -239,7 +239,8 @@ export async function saveConstraints(
 
 export async function saveProcessFlows(
   projectId: string,
-  flows: { name: string; flowType: FlowType; diagramData: { nodes: unknown[]; edges: unknown[] } }[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  flows: { name: string; flowType: FlowType; diagramData: any }[]
 ) {
   await getProjectWithAuth(projectId);
 
