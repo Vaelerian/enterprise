@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect, notFound } from "next/navigation";
-import { GenerationPreview } from "@/components/generate/generation-preview";
+import { RevisionsList } from "@/components/revisions/revisions-list";
 
-export default async function GeneratePage({
+export default async function RevisionsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -18,19 +18,26 @@ export default async function GeneratePage({
     include: {
       org: { include: { memberships: { where: { userId: session.user.id } } } },
       revisions: {
-        where: { status: "finalized" },
         orderBy: { revisionNumber: "asc" },
-        select: { revisionNumber: true, title: true, status: true },
+        include: {
+          createdBy: { select: { name: true } },
+          _count: { select: { changes: true } },
+        },
       },
     },
   });
 
-  if (!project || project.org.memberships.length === 0) notFound();
+  if (!project || project.org.memberships.length === 0) redirect("/dashboard");
 
   return (
-    <div className="p-8">
-      <h2 className="mb-6 text-xl font-semibold">Generate Output</h2>
-      <GenerationPreview projectId={project.id} revisions={project.revisions} />
+    <div className="p-4">
+      <RevisionsList
+        projectId={id}
+        revisions={project.revisions.map((r) => ({
+          ...r,
+          createdAt: r.createdAt.toISOString(),
+        }))}
+      />
     </div>
   );
 }

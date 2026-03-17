@@ -4,12 +4,19 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { OutputTypePicker } from "./output-type-picker";
+import { RevisionSelector } from "./revision-selector";
 import { ExportButtons } from "./export-buttons";
 import { saveGeneratedOutput } from "@/actions/generation";
 import { OutputType } from "@prisma/client";
 
-export function GenerationPreview({ projectId }: { projectId: string }) {
+type Props = {
+  projectId: string;
+  revisions?: { revisionNumber: number; title: string; status: string }[];
+};
+
+export function GenerationPreview({ projectId, revisions }: Props) {
   const [outputType, setOutputType] = useState<string | null>(null);
+  const [revisionNumber, setRevisionNumber] = useState<number | null>(null);
   const [content, setContent] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,7 +40,7 @@ export function GenerationPreview({ projectId }: { projectId: string }) {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, outputType }),
+        body: JSON.stringify({ projectId, outputType, revisionNumber }),
         signal: abortRef.current.signal,
       });
 
@@ -77,6 +84,11 @@ export function GenerationPreview({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-6">
+      <RevisionSelector
+        revisions={revisions ?? []}
+        selected={revisionNumber}
+        onSelect={setRevisionNumber}
+      />
       <OutputTypePicker selected={outputType} onSelect={setOutputType} />
 
       {outputType && (
