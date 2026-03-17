@@ -23,6 +23,11 @@ const OUTPUT_TYPES = [
     label: "Technical Spec",
     description: "Architecture-oriented specification",
   },
+  {
+    id: "revision_changelog",
+    label: "Revision Changelog",
+    description: "Changes-only document for a specific revision",
+  },
 ];
 
 export function OutputTypePicker({

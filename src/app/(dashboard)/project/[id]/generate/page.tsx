@@ -17,6 +17,11 @@ export default async function GeneratePage({
     where: { id, deletedAt: null },
     include: {
       org: { include: { memberships: { where: { userId: session.user.id } } } },
+      revisions: {
+        where: { status: "finalized" },
+        orderBy: { revisionNumber: "asc" },
+        select: { revisionNumber: true, title: true, status: true },
+      },
     },
   });
 
@@ -25,7 +30,7 @@ export default async function GeneratePage({
   return (
     <div className="p-8">
       <h2 className="mb-6 text-xl font-semibold">Generate Output</h2>
-      <GenerationPreview projectId={project.id} />
+      <GenerationPreview projectId={project.id} revisions={project.revisions} />
     </div>
   );
 }
