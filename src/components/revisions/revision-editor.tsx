@@ -26,6 +26,9 @@ export function VersionViewer({
         revisionNumber={revisionNumber}
         title={title}
         createdAt={createdAt}
+        gitCommitSha={snapshot.gitCommitSha}
+        gitCommitMessage={snapshot.gitCommitMessage}
+        gitCommitUrl={snapshot.gitCommitUrl}
       />
       <div className="p-4">
         <VersionTabs snapshot={snapshot} />
