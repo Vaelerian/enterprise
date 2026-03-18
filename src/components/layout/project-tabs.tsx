@@ -10,6 +10,7 @@ const tabs = [
   { label: "Priorities", href: "priorities" },
   { label: "Meta", href: "meta" },
   { label: "Processes", href: "processes" },
+  { label: "Errors", href: "errors" },
   { label: "Versions", href: "revisions" },
   { label: "Chat", href: "chat" },
   { label: "Scoring", href: "scoring" },
