@@ -8,7 +8,7 @@ export async function generateOutput(
   outputType: string,
   projectData: Parameters<typeof buildUserPrompt>[0]
 ): Promise<ReadableStream<Uint8Array>> {
-  const systemPrompt = buildSystemPrompt(outputType);
+  const systemPrompt = buildSystemPrompt(outputType, !!projectData.diffContext);
   const userPrompt = buildUserPrompt(projectData);
 
   const stream = await client.messages.stream({

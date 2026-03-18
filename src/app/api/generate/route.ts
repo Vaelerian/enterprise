@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { generateOutput } from "@/modules/generation/lib/generate";
 import { type VersionSnapshot } from "@/modules/versions/lib";
 import { fetchRepoContext, formatRepoContext } from "@/modules/generation/lib/repo-context";
+import { diffSnapshots } from "@/modules/versions/diff";
+import { formatDiffForPrompt } from "@/modules/generation/lib/diff-context";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -71,11 +73,26 @@ export async function POST(req: NextRequest) {
 
       const snap = revision.snapshot as unknown as VersionSnapshot;
 
+      // Compute diff against previous version if one exists
+      let diffContext: string | undefined;
+      if (revisionNumber > 1) {
+        const prevRevision = await prisma.revision.findFirst({
+          where: { projectId, revisionNumber: revisionNumber - 1 },
+        });
+        if (prevRevision) {
+          const prevSnap = prevRevision.snapshot as unknown as VersionSnapshot;
+          const diff = diffSnapshots(prevSnap, snap);
+          const formatted = formatDiffForPrompt(diff, revisionNumber - 1, revisionNumber);
+          if (formatted) diffContext = formatted;
+        }
+      }
+
       const stream = await generateOutput(outputType, {
         name: project.name,
         description: project.description,
         gitRepo: snap.gitRepo,
         repoContext,
+        diffContext,
         meta: snap.meta,
         brand,
         objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
