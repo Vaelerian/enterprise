@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveObjectives } from "@/actions/wizard";
+import { saveObjectives } from "@/modules/wizard/actions";
 
 type ObjectiveItem = {
   title: string;

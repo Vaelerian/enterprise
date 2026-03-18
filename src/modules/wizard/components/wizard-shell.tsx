@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { updateWizardState } from "@/actions/wizard";
+import { updateWizardState } from "@/modules/wizard/actions";
 
 const STEPS = [
   { number: 1, label: "Project Metadata" },

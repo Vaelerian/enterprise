@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveNFRs } from "@/actions/wizard";
+import { saveNFRs } from "@/modules/wizard/actions";
 import { Priority } from "@prisma/client";
 
 type Metric = { metricName: string; targetValue: string; unit: string };

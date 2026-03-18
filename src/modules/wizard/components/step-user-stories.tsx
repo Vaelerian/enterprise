@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { saveUserStories } from "@/actions/wizard";
+import { saveUserStories } from "@/modules/wizard/actions";
 import { Priority } from "@prisma/client";
 
 type StoryItem = {

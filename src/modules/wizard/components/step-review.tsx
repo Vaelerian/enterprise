@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { finalizeWizard } from "@/actions/wizard";
+import { finalizeWizard } from "@/modules/wizard/actions";
 import { useRouter } from "next/navigation";
 
 type ReviewData = {

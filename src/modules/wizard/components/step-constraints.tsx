@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveConstraints } from "@/actions/wizard";
+import { saveConstraints } from "@/modules/wizard/actions";
 import { Priority } from "@prisma/client";
 
 type ConstraintType = "constraint" | "assumption" | "dependency";

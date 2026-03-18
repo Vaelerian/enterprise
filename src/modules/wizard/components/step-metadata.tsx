@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveProjectMeta } from "@/actions/wizard";
+import { saveProjectMeta } from "@/modules/wizard/actions";
 
 type MetaData = {
   businessContext: string;

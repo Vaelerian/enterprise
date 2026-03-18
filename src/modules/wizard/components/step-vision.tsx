@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { saveVisionStatement } from "@/actions/wizard";
+import { saveVisionStatement } from "@/modules/wizard/actions";
 
 export function StepVision({
   projectId,

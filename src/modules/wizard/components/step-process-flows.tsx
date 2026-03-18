@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { type FlowType } from "@prisma/client";
-import { saveProcessFlows } from "@/actions/wizard";
+import { saveProcessFlows } from "@/modules/wizard/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
