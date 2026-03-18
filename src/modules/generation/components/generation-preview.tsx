@@ -17,6 +17,7 @@ type Props = {
 export function GenerationPreview({ projectId, revisions }: Props) {
   const [outputType, setOutputType] = useState<string | null>(null);
   const [revisionNumber, setRevisionNumber] = useState<number | null>(null);
+  const [changesOnly, setChangesOnly] = useState(false);
   const [content, setContent] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -40,7 +41,7 @@ export function GenerationPreview({ projectId, revisions }: Props) {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, outputType, revisionNumber }),
+        body: JSON.stringify({ projectId, outputType, revisionNumber, changesOnly }),
         signal: abortRef.current.signal,
       });
 
@@ -87,8 +88,35 @@ export function GenerationPreview({ projectId, revisions }: Props) {
       <RevisionSelector
         revisions={revisions ?? []}
         selected={revisionNumber}
-        onSelect={setRevisionNumber}
+        onSelect={(n) => { setRevisionNumber(n); if (!n || n <= 1) setChangesOnly(false); }}
       />
+
+      {revisionNumber && revisionNumber > 1 && (
+        <div className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+          <button
+            onClick={() => setChangesOnly(false)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              !changesOnly ? "bg-gray-800 text-white" : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Full Project
+          </button>
+          <button
+            onClick={() => setChangesOnly(true)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              changesOnly ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Changes Only
+          </button>
+          <span className="text-xs text-gray-500">
+            {changesOnly
+              ? "Generate output for only the new/changed items since the previous version"
+              : "Generate output for the entire project at this version"}
+          </span>
+        </div>
+      )}
+
       <OutputTypePicker selected={outputType} onSelect={setOutputType} />
 
       {outputType && (

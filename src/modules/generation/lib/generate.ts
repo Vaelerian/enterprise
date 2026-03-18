@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { buildSystemPrompt, buildUserPrompt } from "./prompts";
+import { buildSystemPrompt, buildChangesOnlySystemPrompt, buildUserPrompt } from "./prompts";
 import { TextBlock } from "@anthropic-ai/sdk/resources/messages";
 
 const client = new Anthropic();
@@ -8,7 +8,9 @@ export async function generateOutput(
   outputType: string,
   projectData: Parameters<typeof buildUserPrompt>[0]
 ): Promise<ReadableStream<Uint8Array>> {
-  const systemPrompt = buildSystemPrompt(outputType, !!projectData.diffContext);
+  const systemPrompt = projectData.changesOnly
+    ? buildChangesOnlySystemPrompt(outputType)
+    : buildSystemPrompt(outputType, !!projectData.diffContext);
   const userPrompt = buildUserPrompt(projectData);
 
   const stream = await client.messages.stream({
