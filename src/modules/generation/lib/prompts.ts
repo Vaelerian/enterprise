@@ -1,3 +1,59 @@
+export function buildChangesOnlySystemPrompt(outputType: string): string {
+  const base = `You are an expert requirements analyst and technical writer. You are generating output ONLY for new changes being added to an existing project. The project already exists and is in production. You will receive ONLY the items that are new or changed - do NOT describe the full system, only what needs to be added or modified.
+
+IMPORTANT: The repository structure and README are included so you can reference actual files, components, and patterns in the existing codebase. Your output should describe how to ADD these new features to the existing system, referencing specific files and patterns where relevant.`;
+
+  switch (outputType) {
+    case "ai_prompt":
+      return `${base}
+
+Produce a focused implementation prompt for AI coding tools to ADD these specific features to the existing codebase:
+- Reference existing files and patterns from the repository
+- Describe what new files to create and what existing files to modify
+- Include acceptance criteria for just the new features
+- Keep it scoped - don't describe the existing system, just the additions
+
+Format as a prompt that an AI coding assistant could directly use to implement ONLY these new features.`;
+
+    case "requirements_doc":
+      return `${base}
+
+Produce a requirements addendum document covering ONLY the new/changed requirements:
+- Summary of what is being added or changed
+- New functional requirements
+- Impact on existing requirements (if any)
+- New non-functional requirements or changes to existing ones
+
+Write as an addendum that supplements the existing requirements document.`;
+
+    case "project_brief":
+      return `${base}
+
+Produce a change summary brief for stakeholders:
+- What is being added or changed and why
+- Impact on existing features
+- Timeline implications
+- Key decisions needed
+
+Keep it focused on the delta, not the full project.`;
+
+    case "technical_spec":
+      return `${base}
+
+Produce a technical specification for implementing ONLY these changes:
+- New components or modules needed
+- Modifications to existing components (reference actual files)
+- Data model changes
+- API changes or new endpoints
+- Migration considerations
+
+Reference the existing codebase structure and describe how these changes integrate.`;
+
+    default:
+      return base;
+  }
+}
+
 export function buildSystemPrompt(outputType: string, hasDiff?: boolean): string {
   const base = `You are an expert requirements analyst and technical writer. You will be given structured project requirements and must produce a high-quality document.`;
 
@@ -66,6 +122,7 @@ export function buildUserPrompt(projectData: {
   gitRepo?: string;
   repoContext?: string;
   diffContext?: string;
+  changesOnly?: boolean;
   meta: {
     businessContext: string;
     visionStatement: string;
@@ -118,6 +175,15 @@ export function buildUserPrompt(projectData: {
 
   if (projectData.gitRepo) {
     prompt += `## Source Repository\n${projectData.gitRepo}\n\n`;
+  }
+
+  // Changes-only mode: include repo context + diff only, skip full requirements
+  if (projectData.changesOnly && projectData.diffContext) {
+    if (projectData.repoContext) {
+      prompt += projectData.repoContext;
+    }
+    prompt += projectData.diffContext;
+    return prompt;
   }
 
   if (projectData.repoContext) {

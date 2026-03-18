@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { projectId, outputType, revisionNumber } = await req.json();
+  const { projectId, outputType, revisionNumber, changesOnly } = await req.json();
 
   const project = await prisma.project.findUnique({
     where: { id: projectId, deletedAt: null },
@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
         gitRepo: snap.gitRepo,
         repoContext,
         diffContext,
+        changesOnly: !!changesOnly,
         meta: snap.meta,
         brand,
         objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
