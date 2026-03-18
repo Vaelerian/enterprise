@@ -7,7 +7,7 @@ import { type Node, type Edge } from "@xyflow/react";
 import { FlowList } from "./flow-list";
 import { FlowCanvasWithProvider } from "./flow-canvas";
 import { GenerateFlowButton } from "./generate-flow-dialog";
-import { updateDiagramData } from "@/actions/processes";
+import { updateDiagramData } from "@/modules/processes/actions";
 
 type ProcessFlow = {
   id: string;

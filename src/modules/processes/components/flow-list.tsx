@@ -6,7 +6,7 @@ import { Plus, Trash2, GripVertical } from "lucide-react";
 import {
   createProcessFlow,
   deleteProcessFlow,
-} from "@/actions/processes";
+} from "@/modules/processes/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

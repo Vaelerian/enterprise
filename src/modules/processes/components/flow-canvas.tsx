@@ -22,7 +22,7 @@ import { DecisionNode } from "./nodes/decision-node";
 import { StartEndNode } from "./nodes/start-end-node";
 import { SubprocessNode } from "./nodes/subprocess-node";
 import { FlowToolbar } from "./flow-toolbar";
-import { updateDiagramData } from "@/actions/processes";
+import { updateDiagramData } from "@/modules/processes/actions";
 
 type FlowCanvasProps = {
   flowId: string;
