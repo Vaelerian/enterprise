@@ -3,10 +3,71 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { type TextBlock, type ToolUseBlock, type ToolResultBlockParam, type MessageParam } from "@anthropic-ai/sdk/resources/messages";
+import { type Priority } from "@prisma/client";
 
 const client = new Anthropic();
 
-// GET: Load chat history for the current user + project
+const TOOLS: Anthropic.Messages.Tool[] = [
+  {
+    name: "add_objective",
+    description: "Add a new objective to the project. Use when the user asks to add an objective or goal.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "The objective title" },
+        successCriteria: { type: "string", description: "How success will be measured" },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "add_user_story",
+    description: "Add a new user story. Use when the user describes a feature need or says 'as a X I want Y'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        role: { type: "string", description: "The user role (e.g. 'admin', 'customer')" },
+        capability: { type: "string", description: "What the user wants to do" },
+        benefit: { type: "string", description: "Why they want it" },
+        priority: { type: "string", enum: ["must", "should", "could", "wont"], description: "MoSCoW priority" },
+      },
+      required: ["role", "capability"],
+    },
+  },
+  {
+    name: "add_requirement",
+    description: "Add a non-functional requirement. Use when the user mentions performance, security, scalability, or other quality requirements.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        categoryName: { type: "string", description: "NFR category (e.g. 'Performance', 'Security')" },
+        title: { type: "string", description: "Requirement title" },
+        description: { type: "string", description: "Detailed description" },
+        priority: { type: "string", enum: ["must", "should", "could", "wont"], description: "MoSCoW priority" },
+      },
+      required: ["categoryName", "title"],
+    },
+  },
+  {
+    name: "update_meta",
+    description: "Update project metadata fields like vision statement, business context, target users, timeline, technical constraints, stakeholders, or glossary.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        field: {
+          type: "string",
+          enum: ["visionStatement", "businessContext", "targetUsers", "technicalConstraints", "timeline", "stakeholders", "glossary"],
+          description: "Which meta field to update",
+        },
+        value: { type: "string", description: "The new value" },
+      },
+      required: ["field", "value"],
+    },
+  },
+];
+
+// GET: Load chat history
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -27,7 +88,7 @@ export async function GET(req: NextRequest) {
   return Response.json({ messages });
 }
 
-// DELETE: Clear chat history for the current user + project
+// DELETE: Clear chat history
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -46,7 +107,7 @@ export async function DELETE(req: NextRequest) {
   return Response.json({ success: true });
 }
 
-// POST: Send a message, stream AI response, save both to DB
+// POST: Send a message with tool-calling support
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -81,17 +142,12 @@ export async function POST(req: NextRequest) {
     return new Response("Not found", { status: 404 });
   }
 
-  // Save the user message
+  // Save user message
   await prisma.chatMessage.create({
-    data: {
-      projectId,
-      userId: session.user.id,
-      role: "user",
-      content: message,
-    },
+    data: { projectId, userId: session.user.id, role: "user", content: message },
   });
 
-  // Load full conversation history from DB for context
+  // Load history
   const history = await prisma.chatMessage.findMany({
     where: { projectId, userId: session.user.id },
     orderBy: { createdAt: "asc" },
@@ -100,58 +156,194 @@ export async function POST(req: NextRequest) {
 
   const context = buildProjectContext(project);
 
-  const systemPrompt = `You are a helpful requirements analyst assistant. You have access to the full project requirements below and can answer questions about them, identify gaps, suggest improvements, clarify relationships between requirements, and help the user understand their project.
+  const systemPrompt = `You are a helpful requirements analyst assistant with the ability to modify the project. You have access to the full project requirements below and can:
+- Answer questions about the requirements
+- Add new objectives, user stories, and requirements when asked
+- Update project metadata (vision, business context, etc.)
 
-Be concise and specific. Reference actual items from the requirements when answering. If the user asks about something not covered in the requirements, say so clearly.
+When the user asks you to add something, use the appropriate tool. After using a tool, confirm what you added. Be concise and specific.
 
 ${context}`;
 
-  const stream = await client.messages.stream({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: systemPrompt,
-    messages: history.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+  const apiMessages: MessageParam[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
+
+  // Tool-use loop: keep calling until we get a final text response
+  let finalText = "";
+  const toolActions: string[] = [];
+  let currentMessages = [...apiMessages];
+  let iterations = 0;
+  const maxIterations = 5;
+
+  while (iterations < maxIterations) {
+    iterations++;
+
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system: systemPrompt,
+      tools: TOOLS,
+      messages: currentMessages,
+    });
+
+    // Collect text blocks
+    const textBlocks = response.content.filter((b): b is TextBlock => b.type === "text");
+    const toolBlocks = response.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
+
+    if (textBlocks.length > 0) {
+      finalText += textBlocks.map((b) => b.text).join("");
+    }
+
+    // If no tool calls, we're done
+    if (toolBlocks.length === 0 || response.stop_reason !== "tool_use") {
+      break;
+    }
+
+    // Execute tool calls
+    const toolResults: ToolResultBlockParam[] = [];
+    for (const tool of toolBlocks) {
+      const result = await executeTool(tool.name, tool.input as Record<string, string>, projectId);
+      toolActions.push(result);
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: tool.id,
+        content: result,
+      });
+    }
+
+    // Add assistant response + tool results to conversation for next iteration
+    currentMessages = [
+      ...currentMessages,
+      { role: "assistant", content: response.content },
+      { role: "user", content: toolResults },
+    ];
+  }
+
+  // Build the response text including tool action confirmations
+  if (toolActions.length > 0 && !finalText) {
+    finalText = toolActions.join("\n\n");
+  }
+
+  // Save assistant response
+  await prisma.chatMessage.create({
+    data: { projectId, userId: session.user.id, role: "assistant", content: finalText },
   });
 
   const encoder = new TextEncoder();
-  let fullResponse = "";
-
   const readable = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const event of stream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            fullResponse += event.delta.text;
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
-        }
-
-        // Save the assistant response to DB after streaming completes
-        await prisma.chatMessage.create({
-          data: {
-            projectId,
-            userId: session.user.id,
-            role: "assistant",
-            content: fullResponse,
-          },
-        });
-
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
+    start(controller) {
+      controller.enqueue(encoder.encode(finalText));
+      controller.close();
     },
   });
 
   return new Response(readable, {
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
+}
+
+async function executeTool(
+  name: string,
+  input: Record<string, string>,
+  projectId: string
+): Promise<string> {
+  try {
+    switch (name) {
+      case "add_objective": {
+        const maxSort = await prisma.objective.aggregate({
+          where: { projectId },
+          _max: { sortOrder: true },
+        });
+        await prisma.objective.create({
+          data: {
+            projectId,
+            title: input.title,
+            successCriteria: input.successCriteria || "",
+            sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
+          },
+        });
+        return `Added objective: "${input.title}"`;
+      }
+
+      case "add_user_story": {
+        const maxSort = await prisma.userStory.aggregate({
+          where: { projectId },
+          _max: { sortOrder: true },
+        });
+        await prisma.userStory.create({
+          data: {
+            projectId,
+            role: input.role,
+            capability: input.capability,
+            benefit: input.benefit || "",
+            priority: (input.priority || "should") as Priority,
+            sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
+          },
+        });
+        return `Added user story: "As a ${input.role}, I want ${input.capability}"`;
+      }
+
+      case "add_requirement": {
+        // Find or create the category
+        let category = await prisma.requirementCategory.findFirst({
+          where: { projectId, name: input.categoryName },
+        });
+        if (!category) {
+          const maxCatSort = await prisma.requirementCategory.aggregate({
+            where: { projectId },
+            _max: { sortOrder: true },
+          });
+          category = await prisma.requirementCategory.create({
+            data: {
+              projectId,
+              name: input.categoryName,
+              type: "non_functional",
+              sortOrder: (maxCatSort._max.sortOrder ?? 0) + 1,
+            },
+          });
+        }
+        const maxReqSort = await prisma.requirement.aggregate({
+          where: { categoryId: category.id },
+          _max: { sortOrder: true },
+        });
+        await prisma.requirement.create({
+          data: {
+            categoryId: category.id,
+            title: input.title,
+            description: input.description || "",
+            priority: (input.priority || "should") as Priority,
+            sortOrder: (maxReqSort._max.sortOrder ?? 0) + 1,
+          },
+        });
+        return `Added requirement "${input.title}" under ${input.categoryName}`;
+      }
+
+      case "update_meta": {
+        const field = input.field;
+        const validFields = [
+          "visionStatement", "businessContext", "targetUsers",
+          "technicalConstraints", "timeline", "stakeholders", "glossary",
+        ];
+        if (!validFields.includes(field)) {
+          return `Invalid meta field: ${field}`;
+        }
+        await prisma.projectMeta.upsert({
+          where: { projectId },
+          create: { projectId, [field]: input.value },
+          update: { [field]: input.value },
+        });
+        const label = field.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
+        return `Updated ${label.toLowerCase()}`;
+      }
+
+      default:
+        return `Unknown tool: ${name}`;
+    }
+  } catch (error) {
+    return `Failed to execute ${name}: ${error instanceof Error ? error.message : "unknown error"}`;
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
