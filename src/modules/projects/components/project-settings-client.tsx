@@ -8,7 +8,7 @@ import {
   archiveProject,
   deleteProject,
   updateProjectGitRepo,
-} from "@/actions/projects";
+} from "@/modules/projects/actions";
 import { OrgRole, ProjectStatus } from "@prisma/client";
 import { toast } from "sonner";
 
