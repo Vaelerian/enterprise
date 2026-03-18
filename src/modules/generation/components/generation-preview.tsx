@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { OutputTypePicker } from "./output-type-picker";
 import { RevisionSelector } from "./revision-selector";
 import { ExportButtons } from "./export-buttons";
-import { saveGeneratedOutput } from "@/actions/generation";
+import { saveGeneratedOutput } from "@/modules/generation/actions";
 import { OutputType } from "@prisma/client";
 
 type Props = {
