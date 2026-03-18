@@ -27,6 +27,7 @@ model User {
   revisionsCreated      Revision[] @relation("RevisionCreatedBy")
   chatMessages          ChatMessage[]
   scoringResults        ScoringResult[]
+  errorsCreated         ErrorLog[] @relation("ErrorsCreated")
 }
 
 enum OrgRole {
@@ -117,6 +118,7 @@ model Project {
   revisions      Revision[]
   chatMessages   ChatMessage[]
   scoringResults ScoringResult[]
+  errorLogs      ErrorLog[]
 }
 
 model ProjectMeta {
@@ -300,6 +302,33 @@ model ScoringResult {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+}
+
+enum ErrorStatus {
+  open
+  investigating
+  resolved
+  dismissed
+}
+
+model ErrorLog {
+  id          String      @id @default(uuid())
+  projectId   String
+  title       String
+  stackTrace  String      @default("")
+  context     String      @default("")
+  source      String      @default("")
+  status      ErrorStatus @default(open)
+  aiAnalysis  String      @default("")
+  suggestedFix String     @default("")
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("ErrorsCreated", fields: [createdById], references: [id])
 
   @@index([projectId])
 }
