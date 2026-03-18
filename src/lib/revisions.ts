@@ -24,7 +24,8 @@ export type VersionSnapshot = {
       metrics: { id: string; metricName: string; targetValue: string; unit: string }[];
     }[];
   }[];
-  processFlows: { id: string; name: string; flowType: string; diagramData: unknown }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  processFlows: { id: string; name: string; flowType: string; diagramData: any }[];
 };
 
 export async function snapshotProjectState(projectId: string): Promise<VersionSnapshot> {

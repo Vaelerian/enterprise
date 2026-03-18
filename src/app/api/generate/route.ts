@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateOutput } from "@/lib/generation/generate";
+import { type VersionSnapshot } from "@/lib/revisions";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -59,13 +60,7 @@ export async function POST(req: NextRequest) {
         return new Response("Version not found", { status: 404 });
       }
 
-      const snap = revision.snapshot as {
-        meta: Record<string, string>;
-        objectives: { title: string; successCriteria: string }[];
-        userStories: { role: string; capability: string; benefit: string; priority: string }[];
-        requirementCategories: { type: string; name: string; requirements: { title: string; description: string; priority: string; metrics: { metricName: string; targetValue: string; unit: string }[] }[] }[];
-        processFlows: { name: string; flowType: string; diagramData: unknown }[];
-      };
+      const snap = revision.snapshot as unknown as VersionSnapshot;
 
       const stream = await generateOutput(outputType, {
         name: project.name,
