@@ -21,7 +21,7 @@ export default async function DashboardPage({
       memberships: { some: { userId: session.user.id } },
     },
     include: {
-      _count: { select: { projects: true } },
+      _count: { select: { projects: { where: { deletedAt: null } } } },
     },
   });
 
