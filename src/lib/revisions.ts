@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 
 export type VersionSnapshot = {
   gitRepo?: string;
+  gitCommitSha?: string;
+  gitCommitMessage?: string;
+  gitCommitUrl?: string;
   meta: {
     visionStatement: string;
     businessContext: string;
@@ -29,6 +32,48 @@ export type VersionSnapshot = {
   processFlows: { id: string; name: string; flowType: string; diagramData: any }[];
 };
 
+function parseGitHubRepo(url: string): { owner: string; repo: string } | null {
+  const match = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+  if (!match) return null;
+  return { owner: match[1], repo: match[2] };
+}
+
+async function fetchLatestCommit(repoUrl: string): Promise<{
+  sha: string;
+  message: string;
+  url: string;
+} | null> {
+  const parsed = parseGitHubRepo(repoUrl);
+  if (!parsed) return null;
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?per_page=1`,
+      {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "enterprise-app",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) return null;
+
+    const commits = await res.json();
+    if (!commits.length) return null;
+
+    const commit = commits[0];
+    return {
+      sha: commit.sha,
+      message: commit.commit.message.split("\n")[0],
+      url: commit.html_url,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function snapshotProjectState(projectId: string): Promise<VersionSnapshot> {
   const project = await prisma.project.findUniqueOrThrow({
     where: { id: projectId, deletedAt: null },
@@ -49,8 +94,13 @@ export async function snapshotProjectState(projectId: string): Promise<VersionSn
     },
   });
 
+  const gitCommit = project.gitRepo ? await fetchLatestCommit(project.gitRepo) : null;
+
   return {
     gitRepo: project.gitRepo || undefined,
+    gitCommitSha: gitCommit?.sha,
+    gitCommitMessage: gitCommit?.message,
+    gitCommitUrl: gitCommit?.url,
     meta: {
       visionStatement: project.meta?.visionStatement ?? "",
       businessContext: project.meta?.businessContext ?? "",
