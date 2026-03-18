@@ -44,7 +44,7 @@ export function SlidePreview({ slides, projectName, logoUrl, onClose }: SlidePre
 
     const style = document.createElement("style");
     style.textContent = `
-      .reveal .slide-logo { position: absolute; top: 20px; right: 20px; height: 40px; opacity: 0.8; }
+      .reveal .slide-logo { position: absolute; bottom: 16px; left: 20px; height: 28px; opacity: 0.5; }
       .reveal .highlight-text { font-size: 2em; font-weight: bold; color: #60a5fa; }
       .reveal .highlight-sub { font-size: 0.9em; color: #9ca3af; margin-top: 0.5em; }
       .reveal .two-col { display: flex; gap: 2em; text-align: left; }
@@ -137,7 +137,9 @@ export function SlidePreview({ slides, projectName, logoUrl, onClose }: SlidePre
 }
 
 function SlideContent({ slide, logoUrl }: { slide: Slide; logoUrl?: string | null }) {
-  const logo = logoUrl ? (
+  // Only show logo on standard content slides to avoid clutter
+  const showLogo = logoUrl && slide.layout !== "title" && slide.layout !== "highlight";
+  const logo = showLogo ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={logoUrl} className="slide-logo" alt="Logo" />
   ) : null;
@@ -145,19 +147,15 @@ function SlideContent({ slide, logoUrl }: { slide: Slide; logoUrl?: string | nul
   switch (slide.layout) {
     case "title":
       return (
-        <>
-          {logo}
-          <div className="title-slide">
-            <h1>{slide.title}</h1>
-            {slide.bullets[0] && <p>{slide.bullets[0]}</p>}
-          </div>
-        </>
+        <div className="title-slide">
+          <h1>{slide.title}</h1>
+          {slide.bullets[0] && <p>{slide.bullets[0]}</p>}
+        </div>
       );
 
     case "highlight":
       return (
         <>
-          {logo}
           <h3>{slide.title}</h3>
           <div className="highlight-text">{slide.bullets[0] ?? ""}</div>
           {slide.bullets[1] && <div className="highlight-sub">{slide.bullets[1]}</div>}

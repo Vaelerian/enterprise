@@ -174,7 +174,7 @@ function buildRevealHTML(slides: Slide[], projectName: string, logoUrl: string |
   <style>
     .reveal ul { text-align: left; }
     .reveal li { margin-bottom: 0.5em; font-size: 0.8em; }
-    .reveal .slide-logo { position: absolute; top: 20px; right: 20px; height: 40px; opacity: 0.8; }
+    .reveal .slide-logo { position: absolute; bottom: 16px; left: 20px; height: 28px; opacity: 0.5; }
     .reveal .highlight-text { font-size: 2em; font-weight: bold; color: #60a5fa; }
     .reveal .highlight-sub { font-size: 0.9em; color: #9ca3af; margin-top: 0.5em; }
     .reveal .two-col { display: flex; gap: 2em; text-align: left; }
@@ -203,12 +203,14 @@ function buildRevealHTML(slides: Slide[], projectName: string, logoUrl: string |
 }
 
 function renderSlide(slide: Slide, logoUrl: string | null): string {
-  const logo = logoUrl ? `<img src="${esc(logoUrl)}" class="slide-logo" alt="Logo">` : "";
+  // Only show logo on standard bullet slides - skip title and highlight to avoid clutter
+  const showLogo = logoUrl && slide.layout !== "title" && slide.layout !== "highlight";
+  const logo = showLogo ? `<img src="${esc(logoUrl)}" class="slide-logo" alt="Logo">` : "";
   const notes = slide.notes ? `<aside class="notes">${esc(slide.notes)}</aside>` : "";
 
   switch (slide.layout) {
     case "title":
-      return `${logo}
+      return `
     <div class="title-slide">
       <h1>${esc(slide.title)}</h1>
       ${slide.bullets[0] ? `<p>${esc(slide.bullets[0])}</p>` : ""}
