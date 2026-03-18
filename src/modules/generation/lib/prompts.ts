@@ -1,5 +1,9 @@
-export function buildSystemPrompt(outputType: string): string {
+export function buildSystemPrompt(outputType: string, hasDiff?: boolean): string {
   const base = `You are an expert requirements analyst and technical writer. You will be given structured project requirements and must produce a high-quality document.`;
+
+  const diffInstruction = hasDiff
+    ? `\n\nIMPORTANT: This document is being generated from a specific version that has changes compared to the previous version. A "Changes Since" section is included in the input. You MUST highlight what is new or changed in your output. Use markers like "[NEW]" or "[CHANGED]" next to items that were added or modified since the previous version so the reader can quickly identify what evolved.`
+    : "";
 
   switch (outputType) {
     case "ai_prompt":
@@ -11,7 +15,7 @@ Produce a structured prompt suitable for AI coding tools (Claude Code, Cursor, e
 - Clear, directive, implementation-focused language
 - Organized by feature/component area
 
-Format as a prompt that an AI coding assistant could directly use to build the system.`;
+Format as a prompt that an AI coding assistant could directly use to build the system.${diffInstruction}`;
 
     case "requirements_doc":
       return `${base}
@@ -25,7 +29,7 @@ Produce a formal requirements document with:
 - Constraints, assumptions, and dependencies
 - Glossary
 
-Use professional tone suitable for sign-off. Structure with clear numbered sections.`;
+Use professional tone suitable for sign-off. Structure with clear numbered sections.${diffInstruction}`;
 
     case "project_brief":
       return `${base}
@@ -37,7 +41,7 @@ Produce a concise project brief for stakeholders:
 - Timeline and high-level constraints
 - Less technical, more strategic language
 
-Keep it to 1-2 pages. Suitable for executive communication.`;
+Keep it to 1-2 pages. Suitable for executive communication.${diffInstruction}`;
 
     case "technical_spec":
       return `${base}
@@ -49,10 +53,10 @@ Produce an architecture-oriented technical specification:
 - Recommended technology choices based on requirements
 - API boundaries and data models
 
-Aimed at development teams planning implementation.`;
+Aimed at development teams planning implementation.${diffInstruction}`;
 
     default:
-      return base;
+      return base + diffInstruction;
   }
 }
 
@@ -61,6 +65,7 @@ export function buildUserPrompt(projectData: {
   description: string;
   gitRepo?: string;
   repoContext?: string;
+  diffContext?: string;
   meta: {
     businessContext: string;
     visionStatement: string;
@@ -117,6 +122,10 @@ export function buildUserPrompt(projectData: {
 
   if (projectData.repoContext) {
     prompt += projectData.repoContext;
+  }
+
+  if (projectData.diffContext) {
+    prompt += projectData.diffContext;
   }
 
   if (projectData.brand) {
