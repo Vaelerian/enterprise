@@ -23,7 +23,7 @@ import {
   addRequirement,
   updateRequirement,
   deleteRequirement,
-} from "@/actions/requirements";
+} from "@/modules/requirements/actions";
 import { Priority, RequirementType } from "@prisma/client";
 
 type NFRMetric = {
