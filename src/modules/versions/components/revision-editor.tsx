@@ -2,7 +2,7 @@
 
 import { VersionHeader } from "./revision-header";
 import { VersionTabs } from "./revision-tabs";
-import { type VersionSnapshot } from "@/lib/revisions";
+import { type VersionSnapshot } from "@/modules/versions/lib";
 
 type VersionViewerProps = {
   projectId: string;

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { snapshotProjectState } from "@/lib/revisions";
+import { snapshotProjectState } from "@/modules/versions/lib";
 
 async function getProjectWithAuth(projectId: string) {
   const user = await requireSession();

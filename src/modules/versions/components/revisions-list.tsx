@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createVersion } from "@/actions/revisions";
+import { createVersion } from "@/modules/versions/actions";
 import { toast } from "sonner";
 
 type Version = {
