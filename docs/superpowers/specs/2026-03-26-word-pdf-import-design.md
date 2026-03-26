@@ -86,7 +86,7 @@ Text-only extraction for the initial implementation. The `images` array is inclu
 
 ### AI Analysis: `analyse-document.ts`
 
-Non-streaming call to Claude (similar to existing `generateStructuredJSON` pattern). The prompt instructs Claude to extract structured requirements from the document text and return JSON.
+Non-streaming call to Claude (similar to existing `generateStructuredJSON` pattern but with `max_tokens: 16384` to accommodate large structured outputs). The prompt instructs Claude to extract structured requirements from the document text and return JSON.
 
 **Output JSON shape:**
 
@@ -100,7 +100,7 @@ Non-streaming call to Claude (similar to existing `generateStructuredJSON` patte
     "technicalConstraints": "",
     "glossary": ""
   },
-  "vision": "",
+  "visionStatement": "",
   "objectives": [
     { "title": "", "successCriteria": "" }
   ],
@@ -126,8 +126,8 @@ Non-streaming call to Claude (similar to existing `generateStructuredJSON` patte
     {
       "type": "constraint|assumption|dependency",
       "name": "",
-      "items": [
-        { "title": "", "description": "" }
+      "requirements": [
+        { "title": "", "description": "", "priority": "must|should|could|wont" }
       ]
     }
   ],
@@ -153,8 +153,9 @@ The dropzone is collapsible -- users who don't want to import can scroll past it
 - The parsed JSON response is stored as state in `WizardClient` (e.g. `importedData`)
 - `WizardClient` already passes `initialData` to each step component
 - When `importedData` is set, it merges with/overrides `initialData` for each step
-- Step components don't need structural changes -- they already use `defaultValue` on form fields
+- Step components use `defaultValue` on uncontrolled form inputs. Since `defaultValue` only applies on initial mount, the step components must remount when import data arrives. This is achieved by adding a React `key` prop tied to the import state (e.g. `key={importedData ? 'imported' : 'manual'}`) on each step component, forcing a full remount with the new initial data when the import completes.
 - No data is written to the database during import. The user saves each step normally.
+- The dropzone is disabled while a request is in-flight to prevent concurrent imports. Only one import can be active at a time.
 
 ### Database Change
 
@@ -202,4 +203,4 @@ This field stores content from the imported document that Claude could not categ
 - `prisma/schema.prisma` -- add `importNotes` to `ProjectMeta`
 - `src/modules/wizard/components/step-metadata.tsx` -- add dropzone component
 - `src/modules/wizard/components/wizard-client.tsx` -- add `importedData` state and merge logic
-- `src/modules/wizard/actions.ts` -- save `importNotes` in `saveProjectMeta`
+- `src/modules/wizard/actions.ts` -- add `importNotes` to `saveProjectMeta` data shape and upsert call
