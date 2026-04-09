@@ -37,7 +37,7 @@ export async function createProject(
 
     if (data.repoName && org.githubToken) {
       const isPrivate = org.githubRepoVisibility !== "public";
-      const result = await createGithubRepo(org.githubToken, data.repoName, isPrivate);
+      const result = await createGithubRepo(org.githubToken, data.repoName, isPrivate, org.githubOrgName || undefined);
 
       if ("url" in result) {
         await prisma.project.update({

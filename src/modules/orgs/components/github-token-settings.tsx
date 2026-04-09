@@ -1,23 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateOrganization } from "@/modules/orgs/actions";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+type GithubOrg = {
+  login: string;
+  avatarUrl: string;
+};
 
 export function GitHubTokenSettings({
   orgId,
   hasToken,
   repoVisibility,
+  githubOrgName,
 }: {
   orgId: string;
   hasToken: boolean;
   repoVisibility: string;
+  githubOrgName: string;
 }) {
   const [token, setToken] = useState("");
   const [saving, setSaving] = useState(false);
   const [visibility, setVisibility] = useState(repoVisibility);
+  const [selectedOrg, setSelectedOrg] = useState(githubOrgName);
+  const [githubOrgs, setGithubOrgs] = useState<GithubOrg[]>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
+
+  useEffect(() => {
+    if (hasToken) {
+      fetchOrgs();
+    }
+  }, [hasToken, orgId]);
+
+  async function fetchOrgs() {
+    setLoadingOrgs(true);
+    try {
+      const response = await fetch(`/api/github/orgs?orgId=${orgId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setGithubOrgs(data.orgs);
+      }
+    } catch {
+      // Silently fail -- org list is optional
+    } finally {
+      setLoadingOrgs(false);
+    }
+  }
 
   async function handleSave() {
     if (!token.trim()) return;
@@ -26,6 +58,7 @@ export function GitHubTokenSettings({
     setSaving(false);
     setToken("");
     toast.success("GitHub token saved");
+    fetchOrgs();
   }
 
   async function handleVisibilityChange(value: string) {
@@ -34,11 +67,23 @@ export function GitHubTokenSettings({
     toast.success("Repository visibility updated");
   }
 
+  async function handleOrgChange(value: string) {
+    setSelectedOrg(value);
+    await updateOrganization(orgId, { githubOrgName: value });
+    toast.success(
+      value
+        ? `Repositories will be created under ${value}`
+        : "Repositories will be created under your personal account"
+    );
+  }
+
   async function handleClear() {
     if (!confirm("Remove the GitHub token? This will disable auto-PR creation for errors.")) return;
     setSaving(true);
-    await updateOrganization(orgId, { githubToken: "" });
+    await updateOrganization(orgId, { githubToken: "", githubOrgName: "" });
     setSaving(false);
+    setGithubOrgs([]);
+    setSelectedOrg("");
     toast.success("GitHub token removed");
   }
 
@@ -73,35 +118,64 @@ export function GitHubTokenSettings({
         </div>
       )}
       {hasToken && (
-        <div className="mt-4 border-t border-gray-800 pt-4">
-          <label className="block text-sm font-medium mb-2">
-            Default repository visibility
-          </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleVisibilityChange("private")}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                visibility === "private"
-                  ? "bg-gray-700 text-white"
-                  : "text-gray-400 hover:bg-gray-800"
-              }`}
-            >
-              Private
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVisibilityChange("public")}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                visibility === "public"
-                  ? "bg-gray-700 text-white"
-                  : "text-gray-400 hover:bg-gray-800"
-              }`}
-            >
-              Public
-            </button>
+        <>
+          <div className="mt-4 border-t border-gray-800 pt-4">
+            <label className="block text-sm font-medium mb-2">
+              Repository owner
+            </label>
+            {loadingOrgs ? (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading GitHub organizations...
+              </div>
+            ) : (
+              <select
+                value={selectedOrg}
+                onChange={(e) => handleOrgChange(e.target.value)}
+                className="h-9 w-full rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
+              >
+                <option value="">Personal account</option>
+                {githubOrgs.map((org) => (
+                  <option key={org.login} value={org.login}>
+                    {org.login}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Choose where new repositories will be created
+            </p>
           </div>
-        </div>
+          <div className="mt-4 border-t border-gray-800 pt-4">
+            <label className="block text-sm font-medium mb-2">
+              Default repository visibility
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleVisibilityChange("private")}
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  visibility === "private"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-400 hover:bg-gray-800"
+                }`}
+              >
+                Private
+              </button>
+              <button
+                type="button"
+                onClick={() => handleVisibilityChange("public")}
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  visibility === "public"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-400 hover:bg-gray-800"
+                }`}
+              >
+                Public
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

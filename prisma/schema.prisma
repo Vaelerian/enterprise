@@ -50,6 +50,7 @@ model Organization {
   brandDescription String  @default("")
   githubToken          String   @default("")
   githubRepoVisibility String   @default("private")
+  githubOrgName        String   @default("")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
