@@ -5,10 +5,14 @@ type CreateRepoResult = CreateRepoSuccess | CreateRepoError;
 export async function createGithubRepo(
   token: string,
   name: string,
-  isPrivate: boolean
+  isPrivate: boolean,
+  githubOrgName?: string
 ): Promise<CreateRepoResult> {
   try {
-    const response = await fetch("https://api.github.com/user/repos", {
+    const url = githubOrgName
+      ? `https://api.github.com/orgs/${githubOrgName}/repos`
+      : "https://api.github.com/user/repos";
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
