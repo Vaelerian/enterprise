@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Enterprise Requirements Platform
 
-## Getting Started
+A multi-tenant web app for gathering project requirements and generating AI-assisted outputs (coding prompts, requirements docs, project briefs, technical specs). Built with Next.js 16, Prisma, PostgreSQL, and Claude.
 
-First, run the development server:
+## Fork & Deploy (Coolify)
+
+The fastest way to run your own instance:
+
+1. **Fork this repo** to your GitHub account.
+2. In Coolify, create a new **Application** resource pointing at your fork.
+3. Provision a **PostgreSQL 16** database in the same Coolify project.
+4. Set the environment variables below.
+5. Deploy.
+
+Full step-by-step walkthrough: [`guides/coolify-deployment.md`](guides/coolify-deployment.md).
+
+## Environment Variables
+
+Copy [`.env.example`](.env.example) to `.env.local` for local dev, or set these in Coolify's **Environment Variables** tab for production.
+
+### Required
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/enterprise`) |
+| `NEXTAUTH_URL` | Public URL of the app (use `http://` behind Cloudflare, `https://` otherwise) |
+| `NEXTAUTH_SECRET` | JWT signing secret. Generate with `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | Same as `NEXTAUTH_URL`, exposed to the browser |
+| `ANTHROPIC_API_KEY` | Claude API key for AI generation |
+
+### Required for email (registration, invites, password resets)
+
+| Variable | Purpose |
+|----------|---------|
+| `AZURE_TENANT_ID` | Azure AD tenant ID |
+| `AZURE_CLIENT_ID` | Azure AD app registration client ID |
+| `AZURE_CLIENT_SECRET` | Azure AD app registration secret |
+| `AZURE_SENDER_EMAIL` | Mailbox to send from (must exist in the tenant) |
+
+The Azure app needs `Mail.Send` permission with admin consent. Without these, registration and invite flows will throw.
+
+## Local Development
+
+You need Node 20+ and Docker (for the local database).
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Start PostgreSQL locally
+docker compose up -d
+
+# 3. Copy env template and fill in values
+cp .env.example .env.local
+# Edit .env.local - at minimum set NEXTAUTH_SECRET and ANTHROPIC_API_KEY
+
+# 4. Apply migrations
+npx prisma migrate deploy
+
+# 5. Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs at http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Handy commands:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx prisma studio          # Browse the database
+npx prisma migrate dev     # Create a new migration after schema changes
+npm run build              # Production build
+npm run lint               # ESLint
+```
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 16 App Router with Server Components and Server Actions
+- **Database:** PostgreSQL 16 + Prisma 7
+- **Auth:** NextAuth.js 4 (credentials provider, JWT sessions)
+- **AI:** Anthropic SDK streaming (Claude Sonnet 4)
+- **Email:** Microsoft Graph API
+- **UI:** Tailwind CSS 4 + shadcn/ui + Lucide
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Multi-tenant: data is scoped to organizations with owner/admin/member roles. See [`CLAUDE.md`](CLAUDE.md) for a deeper architectural overview.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+  app/                      Next.js routes (auth + dashboard route groups)
+  modules/                  Feature modules (projects, requirements, wizard, ...)
+  lib/                      Shared utilities (auth, permissions, email, generation)
+  components/               Shared UI components
+prisma/
+  schema.prisma             Database schema
+  migrations/               Migration history (run automatically on deploy)
+docs/                       Design specs and plans
+guides/                     Operational guides (deployment, etc.)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Migrations run automatically on every container start via the Dockerfile entrypoint - you don't need to run them manually.
+- The Dockerfile produces a Next.js standalone build, so the runtime image is ~200MB.
+- Cloudflare is the recommended TLS terminator. The app itself runs plain HTTP inside Coolify.
+
+## Troubleshooting
+
+See the [Coolify deployment guide](guides/coolify-deployment.md#troubleshooting) for common deployment issues. For local dev:
+
+- **"Cannot find module '@prisma/client'"** - run `npx prisma generate`.
+- **Migrations fail locally** - check Docker is running and `DATABASE_URL` points to `localhost:5432`.
+- **Registration throws "Azure Graph API credentials not configured"** - fill in the four `AZURE_*` vars, or temporarily stub them out in `src/lib/email.ts` if you just want to test the UI.

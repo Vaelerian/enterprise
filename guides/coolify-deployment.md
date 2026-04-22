@@ -43,13 +43,7 @@ Under the application's **General** settings:
 - **Port Exposes:** `3000`
 - **Port Mappings:** Leave empty (Coolify's proxy handles routing)
 
-Under **Build Arguments**, add:
-
-| Name | Value |
-|------|-------|
-| `DATABASE_URL` | Your PostgreSQL connection string |
-
-This is needed because Prisma migrations run during the Docker build step. The `Dockerfile` conditionally runs `npx prisma migrate deploy` when `DATABASE_URL` is present as a build arg.
+No Build Arguments are required. Prisma migrations run at container startup via the entrypoint script, not during the build, so the database only needs to be reachable when the container starts.
 
 ## Step 4: Set Environment Variables
 
@@ -105,10 +99,10 @@ In the Cloudflare dashboard for your domain:
 2. Watch the build logs - you should see:
    - Dependencies installing (`npm ci`)
    - Prisma client generating (`npx prisma generate`)
-   - Database migrations running (`npx prisma migrate deploy`)
    - Next.js building (`npm run build`)
    - The slim runner image being created
-3. Once deployed, the app should be available at `https://enterprise.coria.app`
+3. When the container starts, the entrypoint runs `prisma migrate deploy` - watch the runtime logs to confirm migrations applied cleanly.
+4. Once deployed, the app should be available at your configured domain (e.g. `https://enterprise.coria.app`).
 
 ## Step 8: Verify the Deployment
 
@@ -127,11 +121,15 @@ Coolify can automatically deploy when you push to your configured branch:
 
 ## Troubleshooting
 
-### Build fails at migration step
+### Container exits immediately with "DATABASE_URL is not set"
 
-- Check that `DATABASE_URL` is set as a **Build Argument** (not just an environment variable)
-- Verify the database is accessible from the Coolify build environment
-- Check that the connection string is correct and the database exists
+- The entrypoint refuses to start without `DATABASE_URL`. Set it in the **Environment Variables** tab.
+
+### Container starts but migrations fail
+
+- Check the container logs - `prisma migrate deploy` prints the reason.
+- Verify the database is reachable from the running container (use internal Docker hostnames if on the same Coolify server).
+- Confirm the user in `DATABASE_URL` has permission to create/alter tables.
 
 ### App starts but shows a database error
 
