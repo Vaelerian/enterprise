@@ -38,7 +38,7 @@ export async function generateOutput(
     : buildSystemPrompt(outputType, !!projectData.diffContext);
   const userPrompt = buildUserPrompt(projectData);
 
-  const stream = await callWithRetry(() =>
+  const stream = await callWithRetry(async () =>
     client.messages.stream({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
@@ -72,7 +72,7 @@ export async function generateOutputFromPrompt(
   systemPrompt: string,
   userPrompt: string
 ): Promise<ReadableStream<Uint8Array>> {
-  const stream = await callWithRetry(() =>
+  const stream = await callWithRetry(async () =>
     client.messages.stream({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
